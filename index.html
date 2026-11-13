@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Early Lung Cancer Screening System Based on Deep Learning and PET/CT Multimodal Features</title>
+<meta name="description" content="A research prototype demo website: an early lung cancer screening system that combines deep learning with CT anatomy and PET metabolic multimodal features." />
+<meta name="keywords" content="lung cancer screening, deep learning, PET/CT, multimodal features, medical imaging" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23143844'/%3E%3Cpath d='M16 8c-3-2-8-1-9 4-1 5 2 10 5 12 1.5 1 3 1 4-1 1 2 2.5 2 4 1 3-2 6-7 5-12-1-5-6-6-9-4z' fill='%230E7C86'/%3E%3Ccircle cx='16' cy='16' r='2.5' fill='%23D9684B'/%3E%3C/svg%3E" />
+<style>
+  /* ============ Design tokens ============ */
+  :root{
+    --bg:#F6F8F8;
+    --surface:#FFFFFF;
+    --ink:#122B33;
+    --ink-soft:#334E57;
+    --muted:#5A7078;
+    --line:#DCE5E6;
+    --teal:#0E7C86;
+    --teal-dark:#143844;
+    --teal-soft:#E3F0F1;
+    --coral:#D9684B;
+    --coral-soft:#FBEAE5;
+    --radius:14px;
+    --maxw:1080px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.65;
+    font-size:15.5px;
+  }
+  h1,h2,h3{font-family:Georgia,"Songti SC","SimSun",serif;line-height:1.25;color:var(--teal-dark)}
+  a{color:var(--teal);text-decoration:none}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 20px}
+
+  /* ============ Header / nav ============ */
+  header{
+    background:var(--teal-dark);
+    color:#fff;
+    position:sticky;top:0;z-index:20;
+    border-bottom:1px solid rgba(255,255,255,.12);
+  }
+  .nav{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:14px 20px;max-width:var(--maxw);margin:0 auto}
+  .brand{display:flex;align-items:center;gap:10px;font-family:Georgia,serif;font-size:17px;font-weight:700}
+  .brand svg{flex:0 0 auto}
+  .brand small{display:block;font-family:system-ui,sans-serif;font-size:11px;font-weight:400;color:#BFD6DA;letter-spacing:.02em}
+  nav{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
+  nav a{
+    color:#DCEAEC;padding:8px 13px;border-radius:8px;font-size:14px;
+  }
+  nav a:hover{background:rgba(255,255,255,.1)}
+  nav a.active{background:var(--teal);color:#fff}
+
+  /* ============ Layout ============ */
+  main{padding:34px 0 60px}
+  .page{display:none}
+  .page.active{display:block;animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--teal);font-weight:600;margin-bottom:14px;
+  }
+  .eyebrow::before{content:"";width:22px;height:1.5px;background:var(--teal)}
+  h1{font-size:clamp(26px,4.2vw,38px);margin-bottom:14px}
+  .lead{color:var(--ink-soft);max-width:760px;font-size:16.5px}
+  .lead .zh{display:block;color:var(--muted);font-size:15px;margin-top:8px}
+  h2{font-size:clamp(20px,2.6vw,26px);margin:34px 0 16px}
+  h3{font-size:17px;margin-bottom:8px}
+  p + p{margin-top:10px}
+  .zh-line{color:var(--muted);font-size:14.5px}
+
+  /* ============ Cards & grids ============ */
+  .grid{display:grid;gap:16px}
+  .grid-3{grid-template-columns:1fr}
+  .grid-2{grid-template-columns:1fr}
+  @media(min-width:720px){
+    .grid-3{grid-template-columns:repeat(3,1fr)}
+    .grid-2{grid-template-columns:repeat(2,1fr)}
+  }
+  .card{
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);padding:20px;
+  }
+  .card .zh{color:var(--muted);font-size:14px;margin-top:6px}
+  .icon-chip{
+    width:38px;height:38px;border-radius:10px;background:var(--teal-soft);
+    display:flex;align-items:center;justify-content:center;margin-bottom:12px;
+  }
+
+  /* ============ Stat chips ============ */
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin:26px 0}
+  @media(min-width:720px){.stats{grid-template-columns:repeat(4,1fr)}}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .stat .num{font-family:Georgia,serif;font-size:26px;color:var(--teal-dark)}
+  .stat .lbl{font-size:13px;color:var(--muted)}
+  .demo-tag{display:inline-block;font-size:11px;color:var(--coral);background:var(--coral-soft);border-radius:6px;padding:2px 8px;margin-left:6px}
+
+  /* ============ Pipeline ============ */
+  .pipeline{display:grid;gap:12px;margin-top:18px}
+  @media(min-width:820px){
+    .pipeline{grid-template-columns:repeat(5,1fr);align-items:stretch}
+    .pstep{position:relative}
+    .pstep:not(:last-child)::after{
+      content:"→";position:absolute;right:-13px;top:50%;transform:translateY(-50%);
+      color:var(--teal);font-weight:700;z-index:2;
+    }
+  }
+  .pstep{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;text-align:center;
+  }
+  .pstep .pno{font-size:12px;color:var(--teal);font-weight:600;letter-spacing:.08em}
+  .pstep h3{font-size:15px;margin:6px 0 4px}
+  .pstep .zh{font-size:13px;color:var(--muted)}
+
+  /* ============ Table ============ */
+  .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+  table{border-collapse:collapse;width:100%;table-layout:fixed;font-size:14.5px;min-width:560px}
+  col.c1{width:22%}col.c2{width:39%}col.c3{width:39%}
+  th,td{padding:13px 15px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+  th{background:var(--teal-soft);color:var(--teal-dark);font-weight:600}
+  td .zh{color:var(--muted);font-size:13px}
+  tr:last-child td{border-bottom:none}
+
+  /* ============ Bars (ablation) ============ */
+  .bars{margin-top:10px;display:grid;gap:16px}
+  .bar-row{display:grid;grid-template-columns:150px 1fr 56px;gap:12px;align-items:center}
+  @media(max-width:600px){.bar-row{grid-template-columns:110px 1fr 48px}}
+  .bar-row .bl{font-size:13.5px;color:var(--ink-soft)}
+  .bar-row .bl .zh{display:block;font-size:12px;color:var(--muted)}
+  .track{background:#EDF2F3;border-radius:8px;height:22px;overflow:hidden}
+  .fill{height:100%;border-radius:8px;background:var(--teal)}
+  .fill.hl{background:var(--coral)}
+  .bar-row .bv{font-family:Georgia,serif;font-size:15px;text-align:right}
+
+  /* ============ Timeline ============ */
+  .timeline{display:grid;gap:0;margin-top:10px}
+  .t-item{display:grid;grid-template-columns:92px 24px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--line)}
+  .t-item:last-child{border-bottom:none}
+  .t-date{font-size:13px;color:var(--teal);font-weight:600;padding-top:2px}
+  .t-dot{justify-self:center;align-self:start;width:12px;height:12px;border-radius:50%;background:var(--teal);margin-top:6px;position:relative}
+  .t-body h3{font-size:15.5px}
+  .t-body .zh{color:var(--muted);font-size:13.5px}
+
+  /* ============ Footer ============ */
+  footer{border-top:1px solid var(--line);padding:24px 0;color:var(--muted);font-size:13px}
+  .disclaimer{background:var(--coral-soft);border:1px solid #F3C7BC;border-radius:var(--radius);padding:16px 18px;margin:26px 0 0;font-size:13.5px;color:#7A3B2C}
+  .disclaimer .zh{display:block;color:#9A5A49;margin-top:4px}
+
+  section{margin-top:8px}
+  .mt{margin-top:22px}
+  @media(prefers-reduced-motion:reduce){
+    .page.active{animation:none}
+    html{scroll-behavior:auto}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a class="brand" href="#/overview" aria-label="Home">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#0E7C86"/>
+        <path d="M16 8c-3-2-8-1-9 4-1 5 2 10 5 12 1.5 1 3 1 4-1 1 2 2.5 2 4 1 3-2 6-7 5-12-1-5-6-6-9-4z" fill="#E3F0F1"/>
+        <circle cx="16" cy="16" r="2.5" fill="#D9684B"/>
+      </svg>
+      <span>LungScreen AI<small>PET/CT Multimodal Screening · 多模态早筛原型</small></span>
+    </a>
+    <nav id="nav">
+      <a href="#/overview" data-route="overview">Overview 概览</a>
+      <a href="#/method" data-route="method">Method 方法</a>
+      <a href="#/evaluation" data-route="evaluation">Evaluation 评估</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ================= Page 1: Overview ================= -->
+<section class="page active" id="page-overview">
+  <p class="eyebrow">Research prototype · 研究原型演示</p>
+  <h1>Early Lung Cancer Screening System Based on Deep Learning and PET/CT Multimodal Features</h1>
+  <p class="lead">
+    This prototype combines CT anatomical imaging with PET metabolic imaging, using deep learning to fuse the two feature streams and provide an early-stage lung cancer risk assessment for screening support.
+    <span class="zh">本原型将 CT 解剖影像与 PET 代谢影像相结合，通过深度学习融合两路特征，为早期肺癌筛查提供风险评估辅助。</span>
+  </p>
+
+  <div class="stats">
+    <div class="stat"><div class="num">2</div><div class="lbl">Imaging modalities · 影像模态<span class="demo-tag">demo</span></div></div>
+    <div class="stat"><div class="num">3</div><div class="lbl">Core modules · 核心模块<span class="demo-tag">demo</span></div></div>
+    <div class="stat"><div class="num">4</div><div class="lbl">Evaluation metrics · 评估指标<span class="demo-tag">demo</span></div></div>
+    <div class="stat"><div class="num">0</div><div class="lbl">Real clinical deployment · 真实临床部署</div></div>
+  </div>
+
+  <h2>1 · Why early screening matters 为什么要做早筛</h2>
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="icon-chip">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E7C86" stroke-width="1.8"><path d="M12 21s-7-4.5-9-9c-1.5-3.5.5-7 4-7 2 0 3.5 1 5 3 1.5-2 3-3 5-3 3.5 0 5.5 3.5 4 7-2 4.5-9 9-9 9z"/></svg>
+      </div>
+      <h3>Early stage, better outcome 早发现，预后更好</h3>
+      <p>Most lung cancers are diagnosed at an advanced stage; detecting small nodules or early metabolic changes can widen the window for treatment.</p>
+      <p class="zh">多数肺癌发现时已偏晚期；尽早识别小结节或早期代谢改变，有助于争取治疗窗口。</p>
+    </div>
+    <div class="card">
+      <div class="icon-chip">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E7C86" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 13h4"/></svg>
+      </div>
+      <h3>CT shows anatomy CT 提供解剖结构</h3>
+      <p>CT outlines nodule size, shape, margin, spiculation and lung parenchyma, but cannot directly show tumor activity.</p>
+      <p class="zh">CT 可显示结节大小、形态、边缘毛刺与肺实质，但不能直接反映肿瘤代谢活性。</p>
+    </div>
+    <div class="card">
+      <div class="icon-chip">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E7C86" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>
+      </div>
+      <h3>PET shows metabolism PET 提供代谢信息</h3>
+      <p>PET reflects glucose uptake and metabolic activity, helping judge whether a lesion is likely active, but resolution is lower than CT.</p>
+      <p class="zh">PET 反映葡萄糖摄取与代谢活性，辅助判断病灶是否活跃，但分辨率低于 CT。</p>
+    </div>
+  </div>
+
+  <h2>2 · System pipeline 系统流程总览</h2>
+  <p class="lead">The system takes paired CT and PET volumes, normalizes and registers them, extracts features with two network branches, fuses the features, and outputs a risk report.</p>
+  <p class="zh-line">系统输入配对的 CT、PET 影像，经归一化与配准后，由两个网络分支提取特征，再融合输出风险报告。</p>
+  <div class="pipeline">
+    <div class="pstep"><div class="pno">STEP 1</div><h3>Input 输入</h3><div class="zh">CT + PET 配准影像</div></div>
+    <div class="pstep"><div class="pno">STEP 2</div><h3>Preprocess 预处理</h3><div class="zh">重采样 / 归一化 / 配准</div></div>
+    <div class="pstep"><div class="pno">STEP 3</div><h3>Feature Extraction 特征提取</h3><div class="zh">双分支深度网络</div></div>
+    <div class="pstep"><div class="pno">STEP 4</div><h3>Fusion 融合</h3><div class="zh">多模态特征融合</div></div>
+    <div class="pstep"><div class="pno">STEP 5</div><h3>Report 风险报告</h3><div class="zh">恶性概率 / 风险分级</div></div>
+  </div>
+
+  <div class="disclaimer">
+    This website is a research prototype and demonstration only. All numbers shown are illustrative demo values, not verified clinical results.
+    <span class="zh">本站为研究原型与演示用途，页面中所有数值均为示例演示数据，不代表经过验证的临床结果。</span>
+  </div>
+</section>
+
+<!-- ================= Page 2: Method ================= -->
+<section class="page" id="page-method">
+  <p class="eyebrow">System design · 系统方法</p>
+  <h1>Method and Architecture 方法与架构</h1>
+  <p class="lead">
+    The model follows a dual-branch design: one branch encodes CT anatomical features, the other encodes PET metabolic features; a fusion module combines both before the final classifier.
+    <span class="zh">模型采用双分支结构：一支编码 CT 解剖特征，一支编码 PET 代谢特征；融合模块在分类前整合两路信息。</span>
+  </p>
+
+  <h2>1 · Dual-branch feature extraction 双分支特征提取</h2>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>CT branch · 解剖分支</h3>
+      <p>Learns nodule morphology, size, margin, spiculation, pleural attachment and local lung texture from CT slices.</p>
+      <p class="zh">从 CT 切片中学习结节形态、大小、边缘、毛刺、胸膜牵拉及局部肺纹理。</p>
+    </div>
+    <div class="card">
+      <h3>PET branch · 代谢分支</h3>
+      <p>Learns uptake intensity, metabolic distribution and SUV-related patterns from PET volumes to estimate lesion activity.</p>
+      <p class="zh">从 PET 体数据中学习摄取强度、代谢分布及与 SUV 相关的模式，估计病灶活性。</p>
+    </div>
+  </div>
+
+  <h2>2 · Multimodal fusion 多模态融合</h2>
+  <p>After feature extraction, the two feature vectors are combined (early / late fusion strategies can be compared in ablation experiments), then passed to a fully connected classifier that outputs a malignant probability and a risk level.</p>
+  <p class="zh-line">特征提取后，将两路特征向量组合（可在消融实验中对比早期融合与晚期融合），再经全连接分类器输出恶性概率与风险分级。</p>
+
+  <h2>3 · CT vs PET information comparison CT 与 PET 信息对比</h2>
+  <div class="table-scroll">
+    <table>
+      <colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+      <thead>
+        <tr><th>Aspect 维度</th><th>CT</th><th>PET</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Main information 主要信息</td>
+          <td>Anatomy: nodule shape, margin, density, location <div class="zh">解剖：结节形状、边缘、密度、位置</div></td>
+          <td>Metabolism: uptake level, tumor activity, SUV <div class="zh">代谢：摄取水平、肿瘤活性、SUV 值</div></td>
+        </tr>
+        <tr>
+          <td>Strength 优势</td>
+          <td>High spatial resolution, clear morphology <div class="zh">空间分辨率高，形态清晰</div></td>
+          <td>Reflects biological activity, useful for aggressive lesions <div class="zh">反映生物活性，对活跃病灶有帮助</div></td>
+        </tr>
+        <tr>
+          <td>Limitation 局限</td>
+          <td>Cannot show metabolic activity directly <div class="zh">不能直接显示代谢活性</div></td>
+          <td>Lower resolution; false positives from inflammation <div class="zh">分辨率较低；炎症可造成假阳性</div></td>
+        </tr>
+        <tr>
+          <td>Role in this system 在本系统中的作用</td>
+          <td>Anatomical feature branch <div class="zh">解剖特征分支</div></td>
+          <td>Metabolic feature branch <div class="zh">代谢特征分支</div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>4 · Preprocessing and training notes 预处理与训练说明</h2>
+  <div class="grid grid-3">
+    <div class="card">
+      <h3>Preprocessing 预处理</h3>
+      <p>Resampling to a unified voxel size, intensity normalization, CT–PET spatial registration and lung-region cropping.</p>
+      <p class="zh">统一体素重采样、强度归一化、CT/PET 空间配准与肺区裁剪。</p>
+    </div>
+    <div class="card">
+      <h3>Data split 数据划分</h3>
+      <p>Dataset is divided into training, validation and test sets; the test set is held out for final evaluation only.</p>
+      <p class="zh">数据划分为训练集、验证集与测试集；测试集仅用于最终评估。</p>
+    </div>
+    <div class="card">
+      <h3>Output 输出结果</h3>
+      <p>A malignant probability score, a risk level (low / medium / high), and the contributing modality features.</p>
+      <p class="zh">输出恶性概率、风险分级（低 / 中 / 高）以及贡献主要判断的模态特征。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Page 3: Evaluation ================= -->
+<section class="page" id="page-evaluation">
+  <p class="eyebrow">Results and outlook · 评估与展望</p>
+  <h1>Evaluation, Ablation and Future Work 评估、消融与展望</h1>
+
+  <h2>1 · Key metrics 核心指标（示例演示数据）</h2>
+  <div class="stats">
+    <div class="stat"><div class="num">0.91</div><div class="lbl">AUC <span class="demo-tag">demo</span></div></div>
+    <div class="stat"><div class="num">88%</div><div class="lbl">Sensitivity 灵敏度 <span class="demo-tag">demo</span></div></div>
+    <div class="stat"><div class="num">85%</div><div class="lbl">Specificity 特异度 <span class="demo-tag">demo</span></div></div>
+    <div class="stat"><div class="num">86%</div><div class="lbl">Accuracy 准确率 <span class="demo-tag">demo</span></div></div>
+  </div>
+
+  <h2>2 · Ablation comparison 消融对比（AUC 示例值）</h2>
+  <p class="lead">The bars compare single-modality and fusion settings. The proposed multimodal setting is highlighted in coral.</p>
+  <p class="zh-line">柱状图对比单模态与不同融合方式；珊瑚色为本文提出的多模态方案。</p>
+  <div class="bars">
+    <div class="bar-row">
+      <div class="bl">CT only <span class="zh">仅 CT</span></div>
+      <div class="track"><div class="fill" style="width:72%"></div></div>
+      <div class="bv">0.78</div>
+    </div>
+    <div class="bar-row">
+      <div class="bl">PET only <span class="zh">仅 PET</span></div>
+      <div class="track"><div class="fill" style="width:66%"></div></div>
+      <div class="bv">0.72</div>
+    </div>
+    <div class="bar-row">
+      <div class="bl">Early fusion <span class="zh">早期融合</span></div>
+      <div class="track"><div class="fill" style="width:81%"></div></div>
+      <div class="bv">0.85</div>
+    </div>
+    <div class="bar-row">
+      <div class="bl">Late fusion <span class="zh">晚期融合</span></div>
+      <div class="track"><div class="fill" style="width:84%"></div></div>
+      <div class="bv">0.88</div>
+    </div>
+    <div class="bar-row">
+      <div class="bl">Proposed multimodal <span class="zh">本文多模态方案</span></div>
+      <div class="track"><div class="fill hl" style="width:87%"></div></div>
+      <div class="bv">0.91</div>
+    </div>
+  </div>
+
+  <h2>3 · Current limitations 当前局限</h2>
+  <div class="grid grid-3">
+    <div class="card">
+      <h3>Data scale 数据规模</h3>
+      <p>The prototype relies on a limited dataset; larger multi-center cohorts are needed before generalizing conclusions.</p>
+      <p class="zh">原型数据规模有限；推广结论前需要更大规模的多中心队列。</p>
+    </div>
+    <div class="card">
+      <h3>Domain shift 域偏移</h3>
+      <p>Scanners, protocols and reconstruction settings differ across hospitals and may degrade performance.</p>
+      <p class="zh">不同医院的设备、扫描协议与重建参数存在差异，可能影响模型表现。</p>
+    </div>
+    <div class="card">
+      <h3>Explainability 可解释性</h3>
+      <p>Decisions should be traceable to lesion regions and modality contributions to support clinician review.</p>
+      <p class="zh">判断结果应可追溯到病灶区域与模态贡献，以便临床医生复核。</p>
+    </div>
+  </div>
+
+  <h2>4 · Future outlook 后续规划</h2>
+  <div class="timeline">
+    <div class="t-item">
+      <div class="t-date">Phase 1</div>
+      <div class="t-dot"></div>
+      <div class="t-body"><h3>Enlarge and balance the dataset 扩充并平衡数据集</h3><div class="zh">纳入更多中心、更多分期与亚型的配对影像。</div></div>
+    </div>
+    <div class="t-item">
+      <div class="t-date">Phase 2</div>
+      <div class="t-dot"></div>
+      <div class="t-body"><h3>Improve fusion and interpretability 改进融合与可解释性</h3><div class="zh">引入跨模态注意力与热力图，定位决策依据。</div></div>
+    </div>
+    <div class="t-item">
+      <div class="t-date">Phase 3</div>
+      <div class="t-dot"></div>
+      <div class="t-body"><h3>External validation 外部验证</h3><div class="zh">在独立外部队列上验证泛化能力，并开展临床可用性评估。</div></div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    All metrics and ablation values on this page are illustrative demo numbers for layout demonstration only. They must be replaced with your real experimental results before any academic or clinical use.
+    <span class="zh">本页所有指标与消融数值均为排版演示用示例数据，在用于学术或临床场景前，必须替换为真实实验结果。</span>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>LungScreen AI · Early Lung Cancer Screening System Based on Deep Learning and PET/CT Multimodal Features — research prototype demo.</p>
+    <p class="zh-line">LungScreen AI · 基于深度学习与 PET/CT 多模态特征的早期肺癌筛查系统 — 研究原型演示站点。</p>
+  </div>
+</footer>
+
+<script>
+  // ============ Hash router (no framework, vanilla JS) ============
+  var routes = ["overview", "method", "evaluation"];
+
+  function currentRoute(){
+    var h = location.hash.replace(/^#\//, "");
+    return routes.indexOf(h) >= 0 ? h : "overview";
+  }
+
+  function render(){
+    var r = currentRoute();
+    routes.forEach(function(name){
+      var page = document.getElementById("page-" + name);
+      if(page) page.classList.toggle("active", name === r);
+    });
+    var links = document.querySelectorAll("#nav a");
+    links.forEach(function(a){
+      a.classList.toggle("active", a.getAttribute("data-route") === r);
+    });
+    window.scrollTo({top:0, behavior:"auto"});
+  }
+
+  window.addEventListener("hashchange", render);
+  window.addEventListener("DOMContentLoaded", render);
+  render();
+</script>
+</body>
+</html>
